@@ -1,0 +1,3 @@
+clean_tomato_healthy
+clean_tomato_leaf_mold
+clean_tomato_mosaic_virus
