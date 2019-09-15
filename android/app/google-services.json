@@ -1,0 +1,69 @@
+{
+  "project_info": {
+    "project_number": "640106372344",
+    "firebase_url": "https://agridisease.firebaseio.com",
+    "project_id": "agridisease",
+    "storage_bucket": "agridisease.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:640106372344:android:2b248e71c7760f9e1c2f0d",
+        "android_client_info": {
+          "package_name": "agr.app.com"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "640106372344-83mvp7b9un2e6rd804f8mefubtqohqop.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZNDd2VmSd0nIRKhcS6UfNSlyWIo6aTMc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "640106372344-83mvp7b9un2e6rd804f8mefubtqohqop.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:640106372344:android:00071c39997f1b981c2f0d",
+        "android_client_info": {
+          "package_name": "agridisease.agri_disease"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "640106372344-83mvp7b9un2e6rd804f8mefubtqohqop.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZNDd2VmSd0nIRKhcS6UfNSlyWIo6aTMc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "640106372344-83mvp7b9un2e6rd804f8mefubtqohqop.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
