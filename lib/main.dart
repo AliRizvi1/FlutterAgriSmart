@@ -1,164 +1,140 @@
-// Copyright 2019 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 import 'dart:async';
 import 'dart:io';
 
-//Add the two dart files..
-import 'package:automl_mlkit/automl_mlkit.dart';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' show join;
 import 'package:path_provider/path_provider.dart';
 
-void main() => runApp(MyApp());
+Future<void> main() async {
+  // Obtain a list of the available cameras on the device.
+  final cameras = await availableCameras();
 
-class MyApp extends StatefulWidget {
-  @override
-  _MyAppState createState() => _MyAppState();
+  // Get a specific camera from the list of available cameras.
+  final firstCamera = cameras.first;
+
+  runApp(
+    MaterialApp(
+      theme: ThemeData.dark(),
+      home: TakePictureScreen(
+        // Pass the appropriate camera to the TakePictureScreen widget.
+        camera: firstCamera,
+      ),
+    ),
+  );
 }
 
-class _MyAppState extends State<MyApp> {
-  String _modelLoadStatus = 'unknown';
-  File _imageFile;
-  String _inferenceResult;
+// A screen that allows users to take a picture using a given camera.
+class TakePictureScreen extends StatefulWidget {
+  final CameraDescription camera;
+
+  const TakePictureScreen({
+    Key key,
+    @required this.camera,
+  }) : super(key: key);
+
+  @override
+  TakePictureScreenState createState() => TakePictureScreenState();
+}
+
+class TakePictureScreenState extends State<TakePictureScreen> {
+  CameraController _controller;
+  Future<void> _initializeControllerFuture;
 
   @override
   void initState() {
     super.initState();
-    loadModel();
+    // To display the current output from the Camera,
+    // create a CameraController.
+    _controller = CameraController(
+      // Get a specific camera from the list of available cameras.
+      widget.camera,
+      // Define the resolution to use.
+      ResolutionPreset.medium,
+    );
+
+    // Next, initialize the controller. This returns a Future.
+    _initializeControllerFuture = _controller.initialize();
   }
 
-  Future<void> loadModel() async {
-    String dataset = "pens";
-    await createLocalFiles(dataset);
-    String modelLoadStatus;
-    try {
-      await AutomlMlkit.loadModelFromCache(dataset: dataset);
-      modelLoadStatus = "AutoML model successfully loaded";
-    } on PlatformException catch (e) {
-      modelLoadStatus = "Error loading model";
-      print("error from platform on calling loadModelFromCache");
-      print(e.toString());
-    }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    setState(() {
-      _modelLoadStatus = modelLoadStatus;
-    });
-  }
-
-  Future<void> createLocalFiles(String folder) async {
-    Directory tempDir = await getTemporaryDirectory();
-    final Directory modelDir = Directory("${tempDir.path}/$folder");
-    if (!modelDir.existsSync()) {
-      modelDir.createSync();
-    }
-    final filenames = ["manifest.json", "model.tflite", "dict.txt"];
-
-    for (String filename in filenames) {
-      final File file = File("${modelDir.path}/$filename");
-      if (!file.existsSync()) {
-        print("Copying file: $filename");
-        await copyFileFromAssets(filename, file);
-      }
-    }
-  }
-
-  /// copies file from assets to dst file
-  Future<void> copyFileFromAssets(String filename, File dstFile) async {
-    ByteData data = await rootBundle.load("assets/$filename");
-    final buffer = data.buffer;
-    dstFile.writeAsBytesSync(
-        buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
-  }
-
-  Future<void> loadImageAndInfer() async {
-    final File imageFile =
-    await ImagePicker.pickImage(source: ImageSource.gallery);
-
-    if (imageFile == null) {
-      Scaffold.of(context)
-          .showSnackBar(SnackBar(content: Text("Can't read image")));
-      return;
-    }
-
-    final results =
-    await AutomlMlkit.runModelOnImage(imagePath: imageFile.path);
-    print("Got results" + results[0].toString());
-    if (results.isEmpty) {
-      Scaffold.of(context)
-          .showSnackBar(SnackBar(content: Text("No labels found")));
-    } else {
-      final label = results[0]["label"];
-      final confidence = (results[0]["confidence"] * 100).toStringAsFixed(2);
-      setState(() {
-        _imageFile = imageFile;
-        _inferenceResult = "$label: $confidence \%";
-      });
-    }
+  @override
+  void dispose() {
+    // Dispose of the controller when the widget is disposed.
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Plugin App'),
-        ),
-        body: Builder(
-          builder: (BuildContext context) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  _inferenceResult == null
-                      ? Container()
-                      : Text(
-                    "$_inferenceResult",
-                    style: TextStyle(fontSize: 20),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: _imageFile == null
-                        ? Container()
-                        : Container(
-                      height: 200,
-                      child: Image.file(_imageFile),
-                    ),
-                  ),
-                  FlatButton(
-                    color: Colors.blue[600],
-                    onPressed: loadImageAndInfer,
-                    textColor: Colors.white,
-                    child: Text("CHOOSE A PHOTO"),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 28),
-                    child: Text('Model load status: $_modelLoadStatus\n'),
-                  ),
-                ],
+    return Scaffold(
+      appBar: AppBar(title: Text('Take a picture')),
+      // Wait until the controller is initialized before displaying the
+      // camera preview. Use a FutureBuilder to display a loading spinner
+      // until the controller has finished initializing.
+      body: FutureBuilder<void>(
+        future: _initializeControllerFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            // If the Future is complete, display the preview.
+            return CameraPreview(_controller);
+          } else {
+            // Otherwise, display a loading indicator.
+            return Center(child: CircularProgressIndicator());
+          }
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.camera_alt),
+        // Provide an onPressed callback.
+        onPressed: () async {
+          // Take the Picture in a try / catch block. If anything goes wrong,
+          // catch the error.
+          try {
+            // Ensure that the camera is initialized.
+            await _initializeControllerFuture;
+
+            // Construct the path where the image should be saved using the
+            // pattern package.
+            final path = join(
+              // Store the picture in the temp directory.
+              // Find the temp directory using the `path_provider` plugin.
+              (await getTemporaryDirectory()).path,
+              '${DateTime.now()}.png',
+            );
+
+            // Attempt to take a picture and log where it's been saved.
+            await _controller.takePicture(path);
+
+            // If the picture was taken, display it on a new screen.
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DisplayPictureScreen(imagePath: path),
               ),
             );
-          },
-        ),
+          } catch (e) {
+            // If an error occurs, log the error to the console.
+            print(e);
+          }
+        },
       ),
+    );
+  }
+}
+
+// A widget that displays the picture taken by the user.
+class DisplayPictureScreen extends StatelessWidget {
+  final String imagePath;
+
+  const DisplayPictureScreen({Key key, this.imagePath}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Display the Picture')),
+      // The image is stored as a file on the device. Use the `Image.file`
+      // constructor with the given path to display the image.
+      body: Image.file(File(imagePath)),
     );
   }
 }
